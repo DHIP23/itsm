@@ -1,0 +1,76 @@
+[
+  {
+    "model": "sla.slapolicy",
+    "pk": 1,
+    "fields": {
+      "priority": "P1",
+      "response_time": 15,
+      "resolution_time": 240,
+      "business_hours": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "sla.slapolicy",
+    "pk": 2,
+    "fields": {
+      "priority": "P2",
+      "response_time": 60,
+      "resolution_time": 480,
+      "business_hours": true,
+      "is_active": true
+    }
+  },
+  {
+    "model": "sla.slapolicy",
+    "pk": 3,
+    "fields": {
+      "priority": "P3",
+      "response_time": 240,
+      "resolution_time": 1440,
+      "business_hours": true,
+      "is_active": true
+    }
+  },
+  {
+    "model": "sla.slapolicy",
+    "pk": 4,
+    "fields": {
+      "priority": "P4",
+      "response_time": 480,
+      "resolution_time": 4320,
+      "business_hours": true,
+      "is_active": true
+    }
+  },
+  {
+    "model": "tickets.category",
+    "pk": 1,
+    "fields": { "name": "Réseau", "description": "Incidents réseau LAN/WAN/VPN", "parent": null, "is_active": true }
+  },
+  {
+    "model": "tickets.category",
+    "pk": 2,
+    "fields": { "name": "Messagerie", "description": "Email, Outlook, Exchange", "parent": null, "is_active": true }
+  },
+  {
+    "model": "tickets.category",
+    "pk": 3,
+    "fields": { "name": "Matériel", "description": "PC, imprimantes, périphériques", "parent": null, "is_active": true }
+  },
+  {
+    "model": "tickets.category",
+    "pk": 4,
+    "fields": { "name": "Applications métier", "description": "ERP, CRM, applications internes", "parent": null, "is_active": true }
+  },
+  {
+    "model": "tickets.category",
+    "pk": 5,
+    "fields": { "name": "Sécurité", "description": "Accès, droits, incidents de sécurité", "parent": null, "is_active": true }
+  },
+  {
+    "model": "tickets.category",
+    "pk": 6,
+    "fields": { "name": "Demande de service", "description": "Création compte, installation logiciel", "parent": null, "is_active": true }
+  }
+]

@@ -1,0 +1,130 @@
+{% extends "base/base.html" %}
+{% block title %}Nouveau ticket — DSI ITSM{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}" class="text-decoration-none" style="color:var(--dsi-orange);">Accueil</a></li>
+<li class="breadcrumb-item"><a href="{% url 'tickets:list' %}" class="text-decoration-none" style="color:var(--dsi-orange);">Tickets</a></li>
+<li class="breadcrumb-item active">Nouveau ticket</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card" style="border-radius:14px;border:none;box-shadow:0 2px 12px rgba(0,0,0,.09);">
+      <div class="card-header bg-white border-bottom py-3">
+        <h5 class="fw-bold mb-0">
+          <i class="bi bi-plus-circle me-2" style="color:var(--dsi-orange);"></i>
+          Nouveau ticket
+        </h5>
+      </div>
+      <div class="card-body p-4">
+        <form method="post" enctype="multipart/form-data"  multiple>
+          {% csrf_token %}
+
+          <!-- Type -->
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Type de ticket <span class="text-danger">*</span></label>
+            <div class="d-flex gap-3">
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="type" id="typeINC" value="INC" checked>
+                <label class="form-check-label" for="typeINC">
+                  <span class="badge bg-danger bg-opacity-10 text-danger">
+                    <i class="bi bi-exclamation-triangle me-1"></i> Incident
+                  </span>
+                </label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="type" id="typeREQ" value="REQ">
+                <label class="form-check-label" for="typeREQ">
+                  <span class="badge bg-primary bg-opacity-10 text-primary">
+                    <i class="bi bi-clipboard-check me-1"></i> Demande de service
+                  </span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Titre -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="{{ form.title.id_for_label }}">
+              Titre <span class="text-danger">*</span>
+            </label>
+            {{ form.title }}
+            {% if form.title.errors %}
+            <div class="invalid-feedback d-block">{{ form.title.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <!-- Description -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="{{ form.description.id_for_label }}">
+              Description <span class="text-danger">*</span>
+            </label>
+            {{ form.description }}
+            <div class="form-text">Décrivez le problème ou la demande en détail.</div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <!-- Priorité -->
+            <div class="col-sm-6">
+              <label class="form-label fw-semibold" for="{{ form.priority.id_for_label }}">Priorité</label>
+              {{ form.priority }}
+              <div class="form-text" id="priorityHelp"></div>
+            </div>
+            <!-- Catégorie -->
+            <div class="col-sm-6">
+              <label class="form-label fw-semibold" for="{{ form.category.id_for_label }}">Catégorie</label>
+              {{ form.category }}
+            </div>
+          </div>
+
+          {% if request.user.can_manage_tickets %}
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="{{ form.source.id_for_label }}">Source</label>
+            {{ form.source }}
+          </div>
+          {% endif %}
+
+          <!-- Tags -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="{{ form.tags.id_for_label }}">Tags</label>
+            {{ form.tags }}
+          </div>
+
+          <!-- Pièces jointes -->
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Pièces jointes</label>
+            <div class="p-3 border rounded bg-light text-center">
+              <i class="bi bi-cloud-upload fs-3 d-block mb-1 text-muted"></i>
+              <input type="file" name="attachments" multiple class="form-control form-control-sm">
+              <div class="form-text mt-1">PDF, images, documents (max 10 Mo chacun)</div>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-end gap-2">
+            <a href="{% url 'tickets:list' %}" class="btn btn-outline-secondary">Annuler</a>
+            <button type="submit" class="btn btn-dsi px-4">
+              <i class="bi bi-send me-1"></i> Soumettre le ticket
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Aide contextuelle priorité
+const priorityHelp = {
+  P1: '🔴 Critique — Service totalement indisponible, impact majeur.',
+  P2: '🟠 Élevée — Dégradation importante, contournement difficile.',
+  P3: '🔵 Normale — Impact limité, contournement possible.',
+  P4: '⚫ Basse — Gêne mineure, pas d\'urgence.',
+};
+document.getElementById('id_priority')?.addEventListener('change', function() {
+  document.getElementById('priorityHelp').textContent = priorityHelp[this.value] || '';
+});
+</script>
+{% endblock %}

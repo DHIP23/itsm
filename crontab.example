@@ -1,0 +1,12 @@
+# ── Crontab DSI ITSM — Vérification SLA toutes les 5 minutes ─────
+# Ajouter via : crontab -e
+#
+# Remplacer /path/to/ par le chemin réel du projet.
+#
+*/5 * * * * /path/to/.venv/bin/python /path/to/manage.py check_sla_breaches >> /path/to/logs/sla_check.log 2>&1
+
+# ── Nettoyage des sessions Django expirées (1 fois par semaine) ───
+0 2 * * 0 /path/to/.venv/bin/python /path/to/manage.py clearsessions >> /path/to/logs/clearsessions.log 2>&1
+
+# ── Collecte des fichiers statiques (à désactiver en prod stable) ─
+# @reboot /path/to/.venv/bin/python /path/to/manage.py collectstatic --noinput

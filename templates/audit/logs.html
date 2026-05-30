@@ -1,0 +1,117 @@
+{% extends "base/base.html" %}
+{% block title %}Journal d'audit — DSI ITSM{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}" class="text-decoration-none" style="color:var(--dsi-orange);">Accueil</a></li>
+<li class="breadcrumb-item active">Audit</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="fw-bold mb-0">
+    <i class="bi bi-shield-check me-2" style="color:var(--dsi-orange);"></i>
+    Journal d'audit
+    <span class="badge bg-secondary fs-6 fw-normal ms-2">Immuable</span>
+  </h4>
+</div>
+
+<div class="card" style="border-radius:12px;border:none;box-shadow:0 2px 8px rgba(0,0,0,.07);">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0" style="font-size:.88rem;">
+      <thead class="table-light">
+        <tr>
+          <th class="ps-3">Horodatage</th>
+          <th>Utilisateur</th>
+          <th>Action</th>
+          <th>Objet</th>
+          <th>Changements</th>
+          <th>IP</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in page_obj %}
+        <tr>
+          <td class="ps-3 text-muted small text-nowrap">{{ log.timestamp|date:"d/m/Y H:i:s" }}</td>
+          <td class="small">
+            {% if log.user %}
+              <span class="fw-semibold">{{ log.user.get_full_name|default:log.user.username }}</span>
+              <div class="text-muted" style="font-size:.75rem;">{{ log.user.get_role_display }}</div>
+            {% else %}
+              <span class="text-muted fst-italic">Système</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if log.action == 'CREATE' %}
+              <span class="badge bg-success bg-opacity-10 text-success"><i class="bi bi-plus"></i> Création</span>
+            {% elif log.action == 'STATUS_CHANGE' %}
+              <span class="badge bg-info bg-opacity-10 text-info"><i class="bi bi-arrow-repeat"></i> Statut</span>
+            {% elif log.action == 'ASSIGN' %}
+              <span class="badge bg-primary bg-opacity-10 text-primary"><i class="bi bi-person-check"></i> Assignation</span>
+            {% elif log.action == 'ESCALATE' %}
+              <span class="badge bg-danger bg-opacity-10 text-danger"><i class="bi bi-arrow-up-circle"></i> Escalade</span>
+            {% elif log.action == 'SLA_BREACH' %}
+              <span class="badge bg-danger bg-opacity-10 text-danger"><i class="bi bi-clock-history"></i> SLA Breach</span>
+            {% elif log.action == 'COMMENT' %}
+              <span class="badge bg-secondary bg-opacity-10 text-secondary"><i class="bi bi-chat"></i> Commentaire</span>
+            {% else %}
+              <span class="badge bg-light text-dark border">{{ log.get_action_display }}</span>
+            {% endif %}
+          </td>
+          <td class="small">
+            <span class="text-muted">{{ log.content_type }}</span>
+            {% if log.object_repr %}
+            <div class="fw-semibold">{{ log.object_repr|truncatechars:40 }}</div>
+            {% endif %}
+          </td>
+          <td class="small">
+            {% if log.changes %}
+              {% for key, val in log.changes.items %}
+              <div>
+                <span class="text-muted">{{ key }}:</span>
+                <span class="text-danger">{{ val.from|default:"—" }}</span>
+                <i class="bi bi-arrow-right text-muted"></i>
+                <span class="text-success">{{ val.to|default:"—" }}</span>
+              </div>
+              {% endfor %}
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td class="small text-muted">{{ log.ip_address|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-center text-muted py-5">Aucun log d'audit.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+    <small class="text-muted">
+      Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+      — {{ page_obj.paginator.count }} entrées
+    </small>
+    <nav>
+      <ul class="pagination pagination-sm mb-0">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.previous_page_number }}">‹</a>
+        </li>
+        {% endif %}
+        <li class="page-item active">
+          <span class="page-link" style="background:var(--dsi-orange);border-color:var(--dsi-orange);">
+            {{ page_obj.number }}
+          </span>
+        </li>
+        {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.next_page_number }}">›</a>
+        </li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

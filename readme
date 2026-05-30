@@ -1,0 +1,7 @@
+unzip dsi_itsm_production.zip && cd dsi_itsm
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env  # puis éditer les valeurs DB
+python manage.py migrate
+python setup_initial.py   # seed : SLA, catégories, users démo
+python manage.py runserver

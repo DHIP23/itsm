@@ -1,0 +1,168 @@
+{% extends "base/base.html" %}
+{% block title %}Tickets — DSI ITSM{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}" class="text-decoration-none" style="color:var(--dsi-orange);">Accueil</a></li>
+<li class="breadcrumb-item active">Tickets</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="fw-bold mb-0">
+    <i class="bi bi-ticket-detailed me-2" style="color:var(--dsi-orange);"></i>Tickets
+    <span class="badge bg-secondary fs-6 fw-normal ms-2">{{ page_obj.paginator.count }}</span>
+  </h4>
+  <a href="{% url 'tickets:create' %}" class="btn btn-dsi">
+    <i class="bi bi-plus-lg me-1"></i> Nouveau ticket
+  </a>
+</div>
+
+<!-- ══ Filtres ═══════════════════════════════════════════════════ -->
+<div class="card mb-4" style="border-radius:12px;border:none;box-shadow:0 2px 8px rgba(0,0,0,.07);">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-sm-4 col-lg-3">
+        <label class="form-label small fw-semibold mb-1">Recherche</label>
+        <div class="input-group input-group-sm">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input type="text" name="q" class="form-control" placeholder="Réf., titre…" value="{{ current_filters.q }}">
+        </div>
+      </div>
+      <div class="col-sm-4 col-lg-2">
+        <label class="form-label small fw-semibold mb-1">Type</label>
+        <select name="type" class="form-select form-select-sm">
+          <option value="">Tous</option>
+          {% for v, l in types %}<option value="{{ v }}" {% if current_filters.type == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-sm-4 col-lg-2">
+        <label class="form-label small fw-semibold mb-1">Statut</label>
+        <select name="status" class="form-select form-select-sm">
+          <option value="">Tous</option>
+          {% for v, l in statuses %}<option value="{{ v }}" {% if current_filters.status == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-sm-4 col-lg-2">
+        <label class="form-label small fw-semibold mb-1">Priorité</label>
+        <select name="priority" class="form-select form-select-sm">
+          <option value="">Toutes</option>
+          {% for v, l in priorities %}<option value="{{ v }}" {% if current_filters.priority == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-sm-4 col-lg-2">
+        <label class="form-label small fw-semibold mb-1">Tri</label>
+        <select name="sort" class="form-select form-select-sm">
+          <option value="-created_at" {% if current_filters.sort == '-created_at' %}selected{% endif %}>Plus récents</option>
+          <option value="created_at"  {% if current_filters.sort == 'created_at'  %}selected{% endif %}>Plus anciens</option>
+          <option value="priority"    {% if current_filters.sort == 'priority'    %}selected{% endif %}>Priorité ↑</option>
+          <option value="-priority"   {% if current_filters.sort == '-priority'   %}selected{% endif %}>Priorité ↓</option>
+        </select>
+      </div>
+      <div class="col-auto">
+        <button class="btn btn-dsi btn-sm" type="submit"><i class="bi bi-funnel me-1"></i>Filtrer</button>
+        <a href="{% url 'tickets:list' %}" class="btn btn-outline-secondary btn-sm ms-1">Reset</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ══ Tableau ═══════════════════════════════════════════════════ -->
+<div class="card" style="border-radius:12px;border:none;box-shadow:0 2px 8px rgba(0,0,0,.07);">
+  <div class="table-responsive">
+    <table class="table table-hover table-tickets mb-0">
+      <thead class="table-light">
+        <tr>
+          <th class="ps-3">Référence</th>
+          <th>Titre</th>
+          <th>Type</th>
+          <th>Priorité</th>
+          <th>Statut</th>
+          <th>Agent</th>
+          <th>SLA</th>
+          <th>Créé le</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in page_obj %}
+        <tr data-href="{% url 'tickets:detail' t.pk %}">
+          <td class="ps-3">
+            <code class="small text-muted">{{ t.reference }}</code>
+          </td>
+          <td>
+            <span class="fw-semibold small">{{ t.title|truncatechars:45 }}</span>
+          </td>
+          <td>
+            <span class="badge {% if t.type == 'INC' %}bg-danger{% else %}bg-primary{% endif %} bg-opacity-10 {% if t.type == 'INC' %}text-danger{% else %}text-primary{% endif %}">
+              {{ t.get_type_display }}
+            </span>
+          </td>
+          <td>
+            <span class="badge badge-{{ t.priority|lower }} text-white">{{ t.priority }}</span>
+          </td>
+          <td>
+            <span class="status-pill bg-{{ t.status_color }} bg-opacity-10 text-{{ t.status_color }}">
+              {{ t.get_status_display }}
+            </span>
+          </td>
+          <td class="small text-muted">{{ t.assignee.get_full_name|default:"Non assigné" }}</td>
+          <td>
+            {% if t.sla_tracker %}
+              {% if t.sla_tracker.resolution_breached %}
+                <span class="badge bg-danger bg-opacity-10 text-danger small"><i class="bi bi-clock-history"></i> Breach</span>
+              {% elif t.sla_tracker.resolution_remaining_minutes is not None %}
+                {% with rem=t.sla_tracker.resolution_remaining_minutes %}
+                  {% if rem < 30 %}
+                    <span class="badge bg-warning bg-opacity-10 text-warning small"><i class="bi bi-exclamation"></i> {{ rem }}min</span>
+                  {% else %}
+                    <span class="badge bg-success bg-opacity-10 text-success small"><i class="bi bi-check2"></i> OK</span>
+                  {% endif %}
+                {% endwith %}
+              {% else %}—{% endif %}
+            {% else %}—{% endif %}
+          </td>
+          <td class="small text-muted">{{ t.created_at|date:"d/m/Y H:i" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="text-center text-muted py-5">
+            <i class="bi bi-inbox fs-2 d-block mb-2 opacity-25"></i>
+            Aucun ticket trouvé
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if page_obj.has_other_pages %}
+  <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+    <small class="text-muted">
+      Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+      — {{ page_obj.paginator.count }} résultat(s)
+    </small>
+    <nav>
+      <ul class="pagination pagination-sm mb-0">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">‹</a>
+        </li>
+        {% endif %}
+        {% for n in page_obj.paginator.page_range %}
+          {% if n == page_obj.number %}
+            <li class="page-item active"><span class="page-link" style="background:var(--dsi-orange);border-color:var(--dsi-orange);">{{ n }}</span></li>
+          {% elif n >= page_obj.number|add:"-2" and n <= page_obj.number|add:"2" %}
+            <li class="page-item"><a class="page-link" href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ n }}">{{ n }}</a></li>
+          {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">›</a>
+        </li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

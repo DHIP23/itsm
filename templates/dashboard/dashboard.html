@@ -1,0 +1,257 @@
+{% extends "base/base.html" %}
+{% block title %}Tableau de bord — DSI ITSM{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Tableau de bord</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="mb-0 fw-bold">Tableau de bord</h4>
+    <small class="text-muted">{{ now|date:"l d F Y — H:i" }}</small>
+  </div>
+  <a href="{% url 'tickets:create' %}" class="btn btn-dsi">
+    <i class="bi bi-plus-lg me-1"></i> Nouveau ticket
+  </a>
+</div>
+
+<!-- ══ KPIs ══════════════════════════════════════════════════════ -->
+<div class="row g-3 mb-4">
+
+  <div class="col-6 col-xl-3">
+    <div class="card kpi-card h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="kpi-icon kpi-icon-orange"><i class="bi bi-ticket-detailed-fill"></i></div>
+        <div>
+          <div class="fs-2 fw-bold lh-1">{{ total_open }}</div>
+          <div class="text-muted small">Tickets ouverts</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-xl-3">
+    <div class="card kpi-card h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="kpi-icon kpi-icon-green"><i class="bi bi-check2-circle"></i></div>
+        <div>
+          <div class="fs-2 fw-bold lh-1">{{ total_closed }}</div>
+          <div class="text-muted small">Résolus / Clôturés</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-xl-3">
+    <div class="card kpi-card h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="kpi-icon kpi-icon-red"><i class="bi bi-exclamation-octagon-fill"></i></div>
+        <div>
+          <div class="fs-2 fw-bold lh-1 {% if breached_resolution > 0 %}text-danger{% endif %}">
+            {{ breached_resolution }}
+          </div>
+          <div class="text-muted small">Breach SLA résolution</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-xl-3">
+    <div class="card kpi-card h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="kpi-icon kpi-icon-red"><i class="bi bi-fire"></i></div>
+        <div>
+          <div class="fs-2 fw-bold lh-1 {% if p1_open > 0 %}text-danger{% endif %}">
+            {{ p1_open }}
+          </div>
+          <div class="text-muted small">Incidents P1 actifs</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══ Graphiques ════════════════════════════════════════════════ -->
+<div class="row g-3 mb-4">
+
+  <div class="col-lg-8">
+    <div class="card kpi-card h-100">
+      <div class="card-body">
+        <h6 class="card-title fw-semibold mb-3">
+          <i class="bi bi-bar-chart-line me-1" style="color:var(--dsi-orange);"></i>
+          Volume — 7 derniers jours
+        </h6>
+        <canvas id="chartVolume" height="90"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card kpi-card h-100">
+      <div class="card-body">
+        <h6 class="card-title fw-semibold mb-3">
+          <i class="bi bi-pie-chart-fill me-1" style="color:var(--dsi-orange);"></i>
+          Répartition par statut
+        </h6>
+        <canvas id="chartStatus" height="180"></canvas>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══ Tickets récents + alertes ════════════════════════════════ -->
+<div class="row g-3">
+
+  <!-- Tickets récents -->
+  <div class="col-lg-8">
+    <div class="card kpi-card">
+      <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Tickets récents</span>
+        <a href="{% url 'tickets:list' %}" class="btn btn-sm btn-outline-secondary">Voir tout</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover table-tickets mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Référence</th>
+              <th>Titre</th>
+              <th>Priorité</th>
+              <th>Statut</th>
+              <th>Agent</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in recent_tickets %}
+            <tr data-href="{% url 'tickets:detail' t.pk %}">
+              <td class="fw-mono small text-muted">{{ t.reference }}</td>
+              <td class="fw-semibold small">{{ t.title|truncatechars:40 }}</td>
+              <td>
+                <span class="badge badge-{{ t.priority|lower }} text-white">{{ t.priority }}</span>
+              </td>
+              <td>
+                <span class="status-pill bg-{{ t.status_color }} bg-opacity-10 text-{{ t.status_color }}">
+                  {{ t.get_status_display }}
+                </span>
+              </td>
+              <td class="small text-muted">{{ t.assignee.get_full_name|default:"—" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center text-muted py-4">Aucun ticket</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alertes & métriques rapides -->
+  <div class="col-lg-4">
+    <div class="card kpi-card mb-3">
+      <div class="card-body">
+        <h6 class="fw-semibold mb-3"><i class="bi bi-lightning-charge-fill text-warning me-1"></i> Alertes</h6>
+        {% if p1_open %}
+        <div class="alert alert-danger py-2 small mb-2">
+          <i class="bi bi-exclamation-octagon me-1"></i>
+          <strong>{{ p1_open }} incident(s) P1</strong> en cours
+        </div>
+        {% endif %}
+        {% if breached_resolution %}
+        <div class="alert alert-warning py-2 small mb-2">
+          <i class="bi bi-clock-history me-1"></i>
+          <strong>{{ breached_resolution }} ticket(s)</strong> en breach SLA résolution
+        </div>
+        {% endif %}
+        {% if unassigned %}
+        <div class="alert alert-info py-2 small mb-2">
+          <i class="bi bi-person-x me-1"></i>
+          <strong>{{ unassigned }} ticket(s)</strong> non assignés
+        </div>
+        {% endif %}
+        {% if not p1_open and not breached_resolution and not unassigned %}
+        <div class="text-center text-muted py-3">
+          <i class="bi bi-check-circle-fill text-success fs-3 d-block mb-1"></i>
+          Aucune alerte active
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card kpi-card">
+      <div class="card-body">
+        <h6 class="fw-semibold mb-3"><i class="bi bi-bar-chart me-1" style="color:var(--dsi-orange);"></i> Priorités ouvertes</h6>
+        {% for pc in priority_counts %}
+        <div class="d-flex justify-content-between small mb-2">
+          <span class="badge badge-{{ pc.priority|lower }} text-white">{{ pc.priority }}</span>
+          <span class="fw-bold">{{ pc.count }}</span>
+        </div>
+        <div class="progress mb-2" style="height:5px;">
+          <div class="progress-bar" style="width:{{ pc.count|floatformat:0 }}%;background:var(--dsi-orange);"></div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+const orange = '#E87722';
+const green  = '#2E7D32';
+const labels = {{ chart_labels|safe }};
+
+// ── Graphique volume ──────────────────────────────────────────
+new Chart(document.getElementById('chartVolume'), {
+  type: 'bar',
+  data: {
+    labels,
+    datasets: [
+      { label: 'Incidents', data: {{ chart_incidents|safe }}, backgroundColor: orange, borderRadius: 6 },
+      { label: 'Demandes',  data: {{ chart_requests|safe }},  backgroundColor: green,  borderRadius: 6 },
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { position: 'top' } },
+    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+  }
+});
+
+// ── Graphique statuts ─────────────────────────────────────────
+const statusColors = {
+  NEW: '#6c757d', ASSIGNED: '#0dcaf0', IN_PROGRESS: '#0d6efd',
+  PENDING: '#ffc107', RESOLVED: '#198754', CLOSED: '#343a40', REOPENED: '#dc3545'
+};
+const sLabels = {{ status_labels|safe }};
+new Chart(document.getElementById('chartStatus'), {
+  type: 'doughnut',
+  data: {
+    labels: sLabels,
+    datasets: [{
+      data: {{ status_values|safe }},
+      backgroundColor: sLabels.map(s => statusColors[s] || '#aaa'),
+      borderWidth: 2, borderColor: '#fff'
+    }]
+  },
+  options: {
+    cutout: '65%',
+    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } }
+  }
+});
+
+// ── Auto-refresh KPIs toutes les 60s ─────────────────────────
+setInterval(async () => {
+  const r = await fetch('{% url "dashboard:api_data" %}');
+  const d = await r.json();
+  // Mise à jour minimaliste des compteurs (sans rechargement page)
+  document.querySelectorAll('[data-kpi]').forEach(el => {
+    if (d[el.dataset.kpi] !== undefined) el.textContent = d[el.dataset.kpi];
+  });
+}, 60000);
+</script>
+{% endblock %}
